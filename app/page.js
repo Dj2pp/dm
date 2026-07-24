@@ -6,6 +6,7 @@ import { CTA, Footer } from "@/components/landing/CTA";
 import { createClient } from "@/lib/server";
 import WarmupPing from "@/components/WarmupPing";   // ← added
 
+
 export default async function LandingPage() {
   const supabase = await createClient();
   const {
