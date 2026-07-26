@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/server";
 import ConnectInstagramButton from "@/components/dashboard/ConnectInstagramButton";
-
+import InstagramStatusBanner from "@/components/dashboard/InstagramStatusBanner";
 import DeleteAccountSection from "@/components/dashboard/DeleteAccountSection";
 
 
@@ -18,6 +18,7 @@ export default async function SettingsPage() {
   return (
     <div className="px-6 py-8 lg:px-10">
       <h1 className="mb-6 font-display text-xl font-semibold text-ink">Settings</h1>
+      <InstagramStatusBanner />
 
       <div className="max-w-md space-y-6">
         <div className="rounded-2xl border border-base-border bg-base-surface p-6">
