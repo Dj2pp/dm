@@ -1,15 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Loader2 } from "lucide-react";
-import { createCampaign } from "@/lib/api";
+import { createCampaign, updateCampaign } from "@/lib/api";
 
-export default function NewCampaignModal({ open, onClose, onCreated }) {
+/**
+ * Doubles as both the "New trigger" and "Edit trigger" modal.
+ * Pass a `campaign` object to switch into edit mode (fields pre-filled,
+ * submits a PATCH instead of a POST). Omit it for create mode.
+ */
+export default function NewCampaignModal({ open, onClose, onSaved, campaign }) {
+  const isEditMode = !!campaign;
+
   const [triggerWord, setTriggerWord] = useState("");
   const [destinationLink, setDestinationLink] = useState("");
+  const [messageTemplate, setMessageTemplate] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (!open) return;
+    setError(null);
+    setTriggerWord(campaign?.trigger_word ?? "");
+    setDestinationLink(campaign?.destination_link ?? "");
+    setMessageTemplate(campaign?.message_template ?? "");
+  }, [open, campaign]);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -17,10 +33,15 @@ export default function NewCampaignModal({ open, onClose, onCreated }) {
     setError(null);
 
     try {
-      const campaign = await createCampaign({ triggerWord, destinationLink });
-      onCreated(campaign);
-      setTriggerWord("");
-      setDestinationLink("");
+      const saved = isEditMode
+        ? await updateCampaign(campaign.id, {
+            triggerWord,
+            destinationLink,
+            messageTemplate: messageTemplate || null,
+          })
+        : await createCampaign({ triggerWord, destinationLink, messageTemplate });
+
+      onSaved(saved);
       onClose();
     } catch (err) {
       setError(err.message);
@@ -49,7 +70,7 @@ export default function NewCampaignModal({ open, onClose, onCreated }) {
           >
             <div className="mb-5 flex items-center justify-between">
               <h2 className="font-display text-lg font-semibold text-ink">
-                New trigger
+                {isEditMode ? "Edit trigger" : "New trigger"}
               </h2>
               <button
                 onClick={onClose}
@@ -87,6 +108,20 @@ export default function NewCampaignModal({ open, onClose, onCreated }) {
                 />
               </div>
 
+              <div>
+                <label className="mb-1.5 block text-xs font-medium text-ink-muted">
+                  Custom DM message{" "}
+                  <span className="text-ink-faint">(optional)</span>
+                </label>
+                <textarea
+                  value={messageTemplate}
+                  onChange={(e) => setMessageTemplate(e.target.value)}
+                  placeholder="Hey! Here's our pricing page 👇 (leave blank to use the default message)"
+                  rows={3}
+                  className="w-full resize-none rounded-lg border border-base-border bg-base px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-faint focus:border-signal focus:outline-none"
+                />
+              </div>
+
               {error && <p className="text-xs text-alert">{error}</p>}
 
               <button
@@ -95,7 +130,13 @@ export default function NewCampaignModal({ open, onClose, onCreated }) {
                 className="flex w-full items-center justify-center gap-2 rounded-lg bg-signal py-3 text-sm font-medium text-white transition hover:bg-signal-soft disabled:opacity-60"
               >
                 {isSubmitting && <Loader2 size={15} className="animate-spin" />}
-                {isSubmitting ? "Creating..." : "Create trigger"}
+                {isSubmitting
+                  ? isEditMode
+                    ? "Saving..."
+                    : "Creating..."
+                  : isEditMode
+                    ? "Save changes"
+                    : "Create trigger"}
               </button>
             </form>
           </motion.div>

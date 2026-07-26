@@ -10,6 +10,7 @@ export default function CampaignsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState(null); // null = create mode
 
   useEffect(() => {
     fetchCampaigns()
@@ -18,8 +19,27 @@ export default function CampaignsPage() {
       .finally(() => setIsLoading(false));
   }, []);
 
-  function handleCreated(newCampaign) {
-    setCampaigns((prev) => [newCampaign, ...prev]);
+  function handleSaved(saved) {
+    setCampaigns((prev) => {
+      const exists = prev.some((c) => c.id === saved.id);
+      return exists
+        ? prev.map((c) => (c.id === saved.id ? saved : c))
+        : [saved, ...prev];
+    });
+  }
+
+  function handleDeleted(campaignId) {
+    setCampaigns((prev) => prev.filter((c) => c.id !== campaignId));
+  }
+
+  function openCreateModal() {
+    setEditingCampaign(null);
+    setModalOpen(true);
+  }
+
+  function openEditModal(campaign) {
+    setEditingCampaign(campaign);
+    setModalOpen(true);
   }
 
   return (
@@ -27,19 +47,26 @@ export default function CampaignsPage() {
       <div className="mb-6 flex items-center justify-between">
         <h1 className="font-display text-xl font-semibold text-ink">Campaigns</h1>
         <button
-          onClick={() => setModalOpen(true)}
+          onClick={openCreateModal}
           className="rounded-lg bg-signal px-4 py-2.5 text-sm font-medium text-white hover:bg-signal-soft"
         >
           + New trigger
         </button>
       </div>
 
-      <CampaignsList campaigns={campaigns} isLoading={isLoading} error={error} />
+      <CampaignsList
+        campaigns={campaigns}
+        isLoading={isLoading}
+        error={error}
+        onDelete={handleDeleted}
+        onEdit={openEditModal}
+      />
 
       <NewCampaignModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        onCreated={handleCreated}
+        onSaved={handleSaved}
+        campaign={editingCampaign}
       />
     </div>
   );

@@ -1,6 +1,8 @@
 "use client";
 
-import { Link2, Radio } from "lucide-react";
+import { useState } from "react";
+import { Link2, Pencil, Radio, Trash2 } from "lucide-react";
+import { deleteCampaign } from "@/lib/api";
 
 /**
  * CampaignsList
@@ -10,9 +12,32 @@ import { Link2, Radio } from "lucide-react";
  * empty states are handled explicitly rather than just "not showing
  * anything," per the product's own voice: an empty dashboard should tell
  * you what to do next, not just look broken.
+ *
+ * onDelete and onEdit are optional — pass them from the parent so this
+ * list can update its local campaigns[] state after a successful
+ * delete/edit, and so the parent can open its edit modal pre-filled with
+ * the clicked campaign.
  * -----------------------------------------------------------------------
  */
-export default function CampaignsList({ campaigns, isLoading, error }) {
+export default function CampaignsList({ campaigns, isLoading, error, onDelete, onEdit }) {
+  const [pendingId, setPendingId] = useState(null); // id awaiting confirm click
+  const [deletingId, setDeletingId] = useState(null); // id currently being deleted
+  const [deleteError, setDeleteError] = useState(null);
+
+  async function handleConfirmDelete(id) {
+    setDeletingId(id);
+    setDeleteError(null);
+    try {
+      await deleteCampaign(id);
+      onDelete?.(id);
+    } catch (err) {
+      setDeleteError(err.message || "Couldn't delete this trigger.");
+    } finally {
+      setDeletingId(null);
+      setPendingId(null);
+    }
+  }
+
   return (
     <div className="rounded-2xl border border-base-border bg-base-surface shadow-card">
       <div className="flex items-center justify-between border-b border-base-border px-6 py-5">
@@ -35,9 +60,12 @@ export default function CampaignsList({ campaigns, isLoading, error }) {
 
         {!isLoading && error && (
           <div className="p-6 text-sm text-alert">
-            Couldn't load your triggers — {error}. Check that the API server
-            is running at the URL set in NEXT_PUBLIC_API_BASE_URL.
+           Plzzz... Wait
           </div>
+        )}
+
+        {!isLoading && !error && deleteError && (
+          <div className="px-6 pt-4 text-xs text-alert">{deleteError}</div>
         )}
 
         {!isLoading && !error && campaigns.length === 0 && (
@@ -71,20 +99,62 @@ export default function CampaignsList({ campaigns, isLoading, error }) {
                 </div>
               </div>
 
-              <span
-                className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${
-                  c.is_active
-                    ? "bg-success/12 text-success"
-                    : "bg-base-raised text-ink-faint"
-                }`}
-              >
+              <div className="flex items-center gap-3">
                 <span
-                  className={`h-1.5 w-1.5 rounded-full ${
-                    c.is_active ? "bg-success" : "bg-ink-faint"
+                  className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                    c.is_active
+                      ? "bg-success/12 text-success"
+                      : "bg-base-raised text-ink-faint"
                   }`}
-                />
-                {c.is_active ? "Active" : "Paused"}
-              </span>
+                >
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${
+                      c.is_active ? "bg-success" : "bg-ink-faint"
+                    }`}
+                  />
+                  {c.is_active ? "Active" : "Paused"}
+                </span>
+
+                {pendingId === c.id ? (
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleConfirmDelete(c.id)}
+                      disabled={deletingId === c.id}
+                      className="rounded-md bg-alert px-2.5 py-1 text-[11px] font-medium text-white transition hover:bg-alert/90 disabled:opacity-50"
+                    >
+                      {deletingId === c.id ? "Deleting…" : "Confirm"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPendingId(null)}
+                      disabled={deletingId === c.id}
+                      className="rounded-md px-2 py-1 text-[11px] text-ink-faint transition hover:text-ink"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => onEdit?.(c)}
+                      aria-label={`Edit trigger word ${c.trigger_word}`}
+                      className="rounded-md p-1.5 text-ink-faint transition hover:bg-signal/10 hover:text-signal"
+                    >
+                      <Pencil size={14} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPendingId(c.id)}
+                      aria-label={`Delete trigger word ${c.trigger_word}`}
+                      className="rounded-md p-1.5 text-ink-faint transition hover:bg-alert/10 hover:text-alert"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
       </div>

@@ -1,15 +1,19 @@
 import { createClient } from "@/lib/server";
 import ConnectInstagramButton from "@/components/dashboard/ConnectInstagramButton";
-<<<<<<< HEAD
+
 import DeleteAccountSection from "@/components/dashboard/DeleteAccountSection";
-=======
->>>>>>> 1ba645395829b1cdf5930ef3fbed9decab98840f
+
 
 export default async function SettingsPage() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("instagram_account_id")
+    .eq("id", user?.id)
+    .maybeSingle();
 
   return (
     <div className="px-6 py-8 lg:px-10">
@@ -23,13 +27,12 @@ export default async function SettingsPage() {
 
         <div className="rounded-2xl border border-base-border bg-base-surface p-6">
           <p className="mb-3 text-xs text-ink-faint">Instagram connection</p>
-          <ConnectInstagramButton connected={!!user?.user_metadata?.instagram_account_id} />
-        </div>
-<<<<<<< HEAD
+          <ConnectInstagramButton connected={!!profile?.instagram_account_id} />  
+                </div>
+
 
         <DeleteAccountSection />
-=======
->>>>>>> 1ba645395829b1cdf5930ef3fbed9decab98840f
+
       </div>
     </div>
   );

@@ -19,6 +19,7 @@ export default function DashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingCampaign, setEditingCampaign] = useState(null); // null = create mode
 
   useEffect(() => {
     let cancelled = false;
@@ -61,9 +62,23 @@ export default function DashboardPage() {
   const freeTierLimit = analytics?.free_tier_limit ?? 100;
   const weeklyTotal = chartData.reduce((sum, d) => sum + d.sent, 0);
 
+  function handleSaved(saved) {
+    setCampaigns((prev) => {
+      const exists = prev.some((c) => c.id === saved.id);
+      return exists
+        ? prev.map((c) => (c.id === saved.id ? saved : c))
+        : [saved, ...prev];
+    });
+  }
+
   return (
     <>
-      <Topbar onNewCampaign={() => setModalOpen(true)} />
+      <Topbar
+        onNewCampaign={() => {
+          setEditingCampaign(null);
+          setModalOpen(true);
+        }}
+      />
 
       <div className="space-y-6 px-6 py-8 lg:px-10">
         {error && (
@@ -99,7 +114,18 @@ export default function DashboardPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_380px]">
-          <CampaignsList campaigns={campaigns} isLoading={isLoading} error={error} />
+          <CampaignsList
+            campaigns={campaigns}
+            isLoading={isLoading}
+            error={error}
+            onDelete={(campaignId) =>
+              setCampaigns((prev) => prev.filter((c) => c.id !== campaignId))
+            }
+            onEdit={(campaign) => {
+              setEditingCampaign(campaign);
+              setModalOpen(true);
+            }}
+          />
           <ActivityFeed items={feedItems} isLoading={isLoading} />
         </div>
       </div>
@@ -107,9 +133,8 @@ export default function DashboardPage() {
       <NewCampaignModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        onCreated={(newCampaign) =>
-          setCampaigns((prev) => [newCampaign, ...prev])
-        }
+        onSaved={handleSaved}
+        campaign={editingCampaign}
       />
     </>
   );

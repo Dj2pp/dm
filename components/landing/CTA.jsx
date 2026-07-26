@@ -58,12 +58,9 @@ export function Footer() {
           <Link href="/terms" className="transition hover:text-ink">
             Terms of Service
           </Link>
-<<<<<<< HEAD
           <Link href="/data-deletion" className="transition hover:text-ink">
             Data Deletion
           </Link>
-=======
->>>>>>> 1ba645395829b1cdf5930ef3fbed9decab98840f
           <a href="mailto:support@dmtriggerbot.app" className="transition hover:text-ink">
             Contact
           </a>
